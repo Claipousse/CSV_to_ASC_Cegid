@@ -182,7 +182,24 @@ class CSVToASCConverter:
         
         return line
         
-    def generate_asc_file(self, df_filtered, output_path, file_type):
+    def find_store_column(self, df):
+        """
+        Trouve la colonne magasin dans le DataFrame.
+        Accepte soit "Recipient store" soit "Etab."
+        """
+        possible_store_columns = ["Recipient store", "Etab."]
+        
+        for col in possible_store_columns:
+            if col in df.columns:
+                self.log_message(f"Colonne magasin trouvée: '{col}'")
+                return col
+        
+        # Si aucune colonne n'est trouvée, lever une erreur
+        available_columns = list(df.columns)
+        raise ValueError(f"Aucune colonne magasin trouvée. Colonnes disponibles: {available_columns}. "
+                        f"Colonnes acceptées: {possible_store_columns}")
+        
+    def generate_asc_file(self, df_filtered, output_path, file_type, store_column):
         self.sequence_counter = 163406
         
         with open(output_path, 'w', encoding='utf-8', newline='') as asc_file:
@@ -193,7 +210,7 @@ class CSVToASCConverter:
             current_date = datetime.now()
             date_str = current_date.strftime("%d/%m/%y")
             
-            grouped = df_filtered.groupby('Recipient store')
+            grouped = df_filtered.groupby(store_column)
             
             for store_code_str, store_data in grouped:
                 try:
@@ -289,7 +306,10 @@ class CSVToASCConverter:
             self.log_message(f"Fichier CSV lu avec succès: {len(df)} lignes")
             self.log_message(f"Colonnes trouvées: {list(df.columns)}")
             
-            required_columns = ["Recipient store", "Code-barres article", "Quantité saisie transfert", "BEST"]
+            # Trouver la colonne magasin (soit "Recipient store" soit "Etab.")
+            store_column = self.find_store_column(df)
+            
+            required_columns = [store_column, "Code-barres article", "Quantité saisie transfert", "BEST"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 raise ValueError(f"Colonnes manquantes dans le CSV: {missing_columns}")
@@ -316,14 +336,14 @@ class CSVToASCConverter:
             
             if len(df_gxo) > 0:
                 self.log_message("Génération du fichier GXO...")
-                gxo_stats = self.generate_asc_file(df_gxo, self.gxo_file_path.get(), "GXO")
+                gxo_stats = self.generate_asc_file(df_gxo, self.gxo_file_path.get(), "GXO", store_column)
                 self.log_message(f"Fichier GXO généré: {gxo_stats[0]} magasins, {gxo_stats[1]} lignes, {gxo_stats[2]} pièces")
             else:
                 self.log_message("Aucune donnée GXO trouvée, fichier GXO non généré")
             
             if len(df_deret) > 0:
                 self.log_message("Génération du fichier DERET...")
-                deret_stats = self.generate_asc_file(df_deret, self.deret_file_path.get(), "DERET")
+                deret_stats = self.generate_asc_file(df_deret, self.deret_file_path.get(), "DERET", store_column)
                 self.log_message(f"Fichier DERET généré: {deret_stats[0]} magasins, {deret_stats[1]} lignes, {deret_stats[2]} pièces")
             else:
                 self.log_message("Aucune donnée DERET trouvée, fichier DERET non généré")
