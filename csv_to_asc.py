@@ -18,17 +18,16 @@ class CSVToASCConverter:
         self.gxo_file_path = tk.StringVar()
         self.deret_file_path = tk.StringVar()
         self.document_type = tk.StringVar(value="TRF")
+        self.column_mode = tk.StringVar(value="name")
         
         self.sequence_counter = 163406
         
         self.setup_ui()
         
     def setup_ui(self):
-        # Création d'un canvas pour le dégradé
         canvas = tk.Canvas(self.root, highlightthickness=0)
         canvas.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Création du dégradé rose
         def create_gradient(canvas, color1, color2, width, height):
             r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
             r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
@@ -41,7 +40,6 @@ class CSVToASCConverter:
                 color = f"#{r:02x}{g:02x}{b:02x}"
                 canvas.create_line(0, i, width, i, fill=color)
         
-        # Mise à jour du dégradé lors du redimensionnement
         def update_gradient(event=None):
             canvas.delete("all")
             width = canvas.winfo_width()
@@ -65,7 +63,6 @@ class CSVToASCConverter:
                                font=('Arial', 14, 'bold'))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
-        # Section fichier CSV source
         csv_frame = ttk.LabelFrame(main_frame, text="Fichier source", padding="10")
         csv_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
         csv_frame.columnconfigure(1, weight=1)
@@ -74,7 +71,6 @@ class CSVToASCConverter:
         ttk.Entry(csv_frame, textvariable=self.csv_file_path, width=50).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
         ttk.Button(csv_frame, text="Parcourir", command=self.select_csv_file).grid(row=0, column=2, padx=(5, 0))
         
-        # Section fichiers ASC de sortie
         asc_frame = ttk.LabelFrame(main_frame, text="Fichiers de sortie", padding="10")
         asc_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
         asc_frame.columnconfigure(1, weight=1)
@@ -87,15 +83,26 @@ class CSVToASCConverter:
         ttk.Entry(asc_frame, textvariable=self.deret_file_path, width=50).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
         ttk.Button(asc_frame, text="Parcourir", command=self.select_deret_file).grid(row=1, column=2, padx=(5, 0))
         
+        mode_frame = ttk.LabelFrame(main_frame, text="Mode de sélection des colonnes", padding="10")
+        mode_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        mode_frame.columnconfigure(2, weight=1)
+        
+        ttk.Radiobutton(mode_frame, text="Filtrage par nom", variable=self.column_mode, 
+                       value="name").grid(row=0, column=0, sticky=tk.W, padx=(0, 15))
+        ttk.Radiobutton(mode_frame, text="Filtrage par ordre", variable=self.column_mode, 
+                       value="order").grid(row=0, column=1, sticky=tk.W, padx=(0, 15))
+        ttk.Button(mode_frame, text="En savoir plus", command=self.show_column_mode_help, 
+                  style='Link.TButton').grid(row=0, column=2, sticky=tk.W, padx=(15, 0))
+        
         convert_button = ttk.Button(main_frame, text="Convertir", command=self.convert_file, 
                                    style='Accent.TButton')
         convert_button.configure(width=20)
-        convert_button.grid(row=3, column=1, pady=10)
+        convert_button.grid(row=4, column=1, pady=10)
         
-        ttk.Label(main_frame, text="Log de conversion:").grid(row=4, column=0, sticky=(tk.W, tk.N), pady=(5, 5))
+        ttk.Label(main_frame, text="Log de conversion:").grid(row=5, column=0, sticky=(tk.W, tk.N), pady=(5, 5))
         
         log_frame = ttk.Frame(main_frame)
-        log_frame.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+        log_frame.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
         
@@ -106,17 +113,89 @@ class CSVToASCConverter:
         self.log_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         
-        main_frame.rowconfigure(5, weight=1)
+        main_frame.rowconfigure(6, weight=1)
         
         credit_label = ttk.Label(main_frame, text="Fait par Clément :)", 
                                 font=('Arial', 7), foreground='gray')
-        credit_label.grid(row=6, column=2, sticky=tk.E, pady=(10, 0))
+        credit_label.grid(row=7, column=2, sticky=tk.E, pady=(10, 0))
         
     def log_message(self, message):
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.log_text.insert(tk.END, f"[{timestamp}] {message}\n")
         self.log_text.see(tk.END)
         self.root.update()
+        
+    def show_column_mode_help(self):
+        """Affiche une popup d'aide pour les modes de sélection des colonnes"""
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Aide - Modes de sélection des colonnes")
+        help_window.geometry("580x580")
+        help_window.configure(bg='#f8e8f0')
+        help_window.transient(self.root)
+        help_window.grab_set()
+        
+        help_window.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        
+        canvas = tk.Canvas(help_window, bg='#f8e8f0')
+        scrollbar = ttk.Scrollbar(help_window, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        main_help_frame = ttk.Frame(scrollable_frame, padding="20")
+        main_help_frame.pack(fill=tk.BOTH, expand=True)
+        
+        name_frame = ttk.LabelFrame(main_help_frame, text="Filtrage par nom (recommandé)", padding="15")
+        name_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        name_text = """Le programme recherche les colonnes par leur nom exact dans le fichier CSV.
+
+Colonnes recherchées :
+• Magasin : "Recipient store" ou "Etab."
+• Code-barres : "Code-barres article"
+• Quantité : "Quantité saisie transfert"
+• Type : "BEST"
+
+✅ Avantages : Fonctionne même si l'ordre change, plus robuste et recommandé."""
+        
+        ttk.Label(name_frame, text=name_text, justify=tk.LEFT).pack(anchor=tk.W)
+        
+        order_frame = ttk.LabelFrame(main_help_frame, text="Filtrage par ordre", padding="15")
+        order_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        order_text = """Le programme utilise la position des colonnes dans le fichier CSV.
+
+Ordre attendu (basé sur le format REA.csv) :
+1. Recipient store (magasin)
+2. Code article
+3. Code-barres article
+4. Libellé article
+5. Quantité saisie transfert
+6. Stock net
+7. Stock initial
+8. Qté vendue
+9. Stock mini
+10. Stock maxi
+11. CONDITIONNEMENT
+12. Stock dispo.
+13. BEST
+
+⚠️ Important : L'ordre doit être exactement respecté, moins flexible que le filtrage par nom."""
+        
+        ttk.Label(order_frame, text=order_text, justify=tk.LEFT).pack(anchor=tk.W)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
     def select_csv_file(self):
         file_path = filedialog.askopenfilename(
@@ -184,22 +263,78 @@ class CSVToASCConverter:
         
     def find_store_column(self, df):
         """
-        Trouve la colonne magasin dans le DataFrame.
-        Accepte soit "Recipient store" soit "Etab."
+        Trouve la colonne magasin dans le DataFrame selon le mode sélectionné.
+        Mode 'name' : recherche par nom ("Recipient store" ou "Etab.")
+        Mode 'order' : utilise la position 0 (première colonne)
         """
-        possible_store_columns = ["Recipient store", "Etab."]
+        if self.column_mode.get() == "name":
+            possible_store_columns = ["Recipient store", "Etab."]
+            
+            for col in possible_store_columns:
+                if col in df.columns:
+                    self.log_message(f"Mode nom - Colonne magasin trouvée: '{col}'")
+                    return col
+            
+            available_columns = list(df.columns)
+            raise ValueError(f"Mode nom - Aucune colonne magasin trouvée. Colonnes disponibles: {available_columns}. "
+                            f"Colonnes acceptées: {possible_store_columns}")
         
-        for col in possible_store_columns:
-            if col in df.columns:
-                self.log_message(f"Colonne magasin trouvée: '{col}'")
-                return col
+        else:
+            if len(df.columns) >= 1:
+                store_column = df.columns[0]
+                self.log_message(f"Mode ordre - Colonne magasin (position 0): '{store_column}'")
+                return store_column
+            else:
+                raise ValueError("Mode ordre - Le fichier CSV doit avoir au moins 1 colonne")
+    
+    def get_required_columns(self, df):
+        """
+        Retourne les colonnes requises selon le mode sélectionné.
+        """
+        if self.column_mode.get() == "name":
+            store_column = self.find_store_column(df)
+            
+            column_mapping = {
+                'store': store_column,
+                'barcode': "Code-barres article",
+                'quantity': "Quantité saisie transfert", 
+                'best': "BEST"
+            }
+            
+            missing_columns = []
+            for key, col_name in column_mapping.items():
+                if col_name not in df.columns:
+                    missing_columns.append(col_name)
+            
+            if missing_columns:
+                raise ValueError(f"Mode nom - Colonnes manquantes: {missing_columns}")
+                
+        else:
+            required_positions = {
+                'store': 0,
+                'barcode': 2, 
+                'quantity': 4,
+                'best': 12
+            }
+            
+            max_position = max(required_positions.values())
+            if len(df.columns) <= max_position:
+                raise ValueError(f"Mode ordre - Le fichier CSV doit avoir au moins {max_position + 1} colonnes. "
+                               f"Actuellement: {len(df.columns)} colonnes")
+            
+            column_mapping = {
+                key: df.columns[pos] for key, pos in required_positions.items()
+            }
+            
+            self.log_message(f"Mode ordre - Colonnes utilisées:")
+            self.log_message(f"  Magasin (pos 0): '{column_mapping['store']}'")
+            self.log_message(f"  Code-barres (pos 2): '{column_mapping['barcode']}'")
+            self.log_message(f"  Quantité (pos 4): '{column_mapping['quantity']}'")
+            self.log_message(f"  BEST (pos 12): '{column_mapping['best']}'")
         
-        # Si aucune colonne n'est trouvée, lever une erreur
-        available_columns = list(df.columns)
-        raise ValueError(f"Aucune colonne magasin trouvée. Colonnes disponibles: {available_columns}. "
-                        f"Colonnes acceptées: {possible_store_columns}")
+        return column_mapping
         
-    def generate_asc_file(self, df_filtered, output_path, file_type, store_column):
+    def generate_asc_file(self, df_filtered, output_path, file_type, column_mapping):
         self.sequence_counter = 163406
         
         with open(output_path, 'w', encoding='utf-8', newline='') as asc_file:
@@ -210,7 +345,7 @@ class CSVToASCConverter:
             current_date = datetime.now()
             date_str = current_date.strftime("%d/%m/%y")
             
-            grouped = df_filtered.groupby(store_column)
+            grouped = df_filtered.groupby(column_mapping['store'])
             
             for store_code_str, store_data in grouped:
                 try:
@@ -231,8 +366,8 @@ class CSVToASCConverter:
                 
                 for _, row in store_data.iterrows():
                     try:
-                        barcode = str(row['Code-barres article']).strip()
-                        quantity_str = str(row['Quantité saisie transfert']).strip()
+                        barcode = str(row[column_mapping['barcode']]).strip()
+                        quantity_str = str(row[column_mapping['quantity']]).strip()
                         
                         if not barcode or barcode == 'nan' or barcode == '':
                             continue
@@ -305,28 +440,23 @@ class CSVToASCConverter:
             
             self.log_message(f"Fichier CSV lu avec succès: {len(df)} lignes")
             self.log_message(f"Colonnes trouvées: {list(df.columns)}")
+            self.log_message(f"Mode de sélection: {self.column_mode.get()}")
             
-            # Trouver la colonne magasin (soit "Recipient store" soit "Etab.")
-            store_column = self.find_store_column(df)
+            column_mapping = self.get_required_columns(df)
             
-            required_columns = [store_column, "Code-barres article", "Quantité saisie transfert", "BEST"]
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            if missing_columns:
-                raise ValueError(f"Colonnes manquantes dans le CSV: {missing_columns}")
-            
-            df = df.dropna(subset=['Quantité saisie transfert'])
-            df = df[df['Quantité saisie transfert'].astype(str).str.strip() != '']
-            df = df[df['Quantité saisie transfert'].astype(str).str.strip() != '0']
+            df = df.dropna(subset=[column_mapping['quantity']])
+            df = df[df[column_mapping['quantity']].astype(str).str.strip() != '']
+            df = df[df[column_mapping['quantity']].astype(str).str.strip() != '0']
             
             self.log_message(f"Après filtrage: {len(df)} lignes avec quantités valides")
             
-            df['BEST'] = df['BEST'].fillna('DERET')
-            df['BEST'] = df['BEST'].astype(str).str.strip()
-            df.loc[df['BEST'] == '', 'BEST'] = 'DERET'
-            df.loc[df['BEST'] == 'nan', 'BEST'] = 'DERET'
+            df[column_mapping['best']] = df[column_mapping['best']].fillna('DERET')
+            df[column_mapping['best']] = df[column_mapping['best']].astype(str).str.strip()
+            df.loc[df[column_mapping['best']] == '', column_mapping['best']] = 'DERET'
+            df.loc[df[column_mapping['best']] == 'nan', column_mapping['best']] = 'DERET'
             
-            df_gxo = df[df['BEST'] == 'GXO'].copy()
-            df_deret = df[df['BEST'] != 'GXO'].copy()
+            df_gxo = df[df[column_mapping['best']] == 'GXO'].copy()
+            df_deret = df[df[column_mapping['best']] != 'GXO'].copy()
             
             self.log_message(f"Lignes GXO: {len(df_gxo)}")
             self.log_message(f"Lignes DERET: {len(df_deret)}")
@@ -336,14 +466,14 @@ class CSVToASCConverter:
             
             if len(df_gxo) > 0:
                 self.log_message("Génération du fichier GXO...")
-                gxo_stats = self.generate_asc_file(df_gxo, self.gxo_file_path.get(), "GXO", store_column)
+                gxo_stats = self.generate_asc_file(df_gxo, self.gxo_file_path.get(), "GXO", column_mapping)
                 self.log_message(f"Fichier GXO généré: {gxo_stats[0]} magasins, {gxo_stats[1]} lignes, {gxo_stats[2]} pièces")
             else:
                 self.log_message("Aucune donnée GXO trouvée, fichier GXO non généré")
             
             if len(df_deret) > 0:
                 self.log_message("Génération du fichier DERET...")
-                deret_stats = self.generate_asc_file(df_deret, self.deret_file_path.get(), "DERET", store_column)
+                deret_stats = self.generate_asc_file(df_deret, self.deret_file_path.get(), "DERET", column_mapping)
                 self.log_message(f"Fichier DERET généré: {deret_stats[0]} magasins, {deret_stats[1]} lignes, {deret_stats[2]} pièces")
             else:
                 self.log_message("Aucune donnée DERET trouvée, fichier DERET non généré")
