@@ -11,10 +11,12 @@ class CSVToASCConverter:
     def __init__(self, root):
         self.root = root
         self.root.title("Convertisseur CSV vers ASC - CEGID")
-        self.root.geometry("700x450")
+        self.root.geometry("700x550")
+        self.root.configure(bg='#f8e8f0')
         
         self.csv_file_path = tk.StringVar()
-        self.output_file_path = tk.StringVar()
+        self.gxo_file_path = tk.StringVar()
+        self.deret_file_path = tk.StringVar()
         self.document_type = tk.StringVar(value="TRF")
         
         self.sequence_counter = 163406
@@ -22,28 +24,73 @@ class CSVToASCConverter:
         self.setup_ui()
         
     def setup_ui(self):
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        # Création d'un canvas pour le dégradé
+        canvas = tk.Canvas(self.root, highlightthickness=0)
+        canvas.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Création du dégradé rose
+        def create_gradient(canvas, color1, color2, width, height):
+            r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
+            r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
+            
+            for i in range(height):
+                ratio = i / height
+                r = int(r1 + (r2 - r1) * ratio)
+                g = int(g1 + (g2 - g1) * ratio)
+                b = int(b1 + (b2 - b1) * ratio)
+                color = f"#{r:02x}{g:02x}{b:02x}"
+                canvas.create_line(0, i, width, i, fill=color)
+        
+        # Mise à jour du dégradé lors du redimensionnement
+        def update_gradient(event=None):
+            canvas.delete("all")
+            width = canvas.winfo_width()
+            height = canvas.winfo_height()
+            if width > 1 and height > 1:
+                create_gradient(canvas, "#fdf2f8", "#f8d7da", width, height)
+        
+        canvas.bind("<Configure>", update_gradient)
+        self.root.after(1, update_gradient)
+        
+        main_frame = ttk.Frame(canvas, padding="10")
+        main_frame.place(x=0, y=0, relwidth=1, relheight=1)
         
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
+        canvas.columnconfigure(0, weight=1)
+        canvas.rowconfigure(0, weight=1)
         
         title_label = ttk.Label(main_frame, text="Convertisseur CSV vers ASC pour CEGID", 
                                font=('Arial', 14, 'bold'))
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
-        ttk.Label(main_frame, text="Fichier CSV source:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        ttk.Entry(main_frame, textvariable=self.csv_file_path, width=50).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
-        ttk.Button(main_frame, text="Parcourir", command=self.select_csv_file).grid(row=1, column=2, padx=(5, 0))
+        # Section fichier CSV source
+        csv_frame = ttk.LabelFrame(main_frame, text="Fichier source", padding="10")
+        csv_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        csv_frame.columnconfigure(1, weight=1)
         
-        ttk.Label(main_frame, text="Fichier ASC de sortie:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        ttk.Entry(main_frame, textvariable=self.output_file_path, width=50).grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
-        ttk.Button(main_frame, text="Parcourir", command=self.select_output_file).grid(row=2, column=2, padx=(5, 0))
+        ttk.Label(csv_frame, text="Fichier CSV:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Entry(csv_frame, textvariable=self.csv_file_path, width=50).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
+        ttk.Button(csv_frame, text="Parcourir", command=self.select_csv_file).grid(row=0, column=2, padx=(5, 0))
+        
+        # Section fichiers ASC de sortie
+        asc_frame = ttk.LabelFrame(main_frame, text="Fichiers de sortie", padding="10")
+        asc_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        asc_frame.columnconfigure(1, weight=1)
+        
+        ttk.Label(asc_frame, text="Fichier ASC GXO:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Entry(asc_frame, textvariable=self.gxo_file_path, width=50).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
+        ttk.Button(asc_frame, text="Parcourir", command=self.select_gxo_file).grid(row=0, column=2, padx=(5, 0))
+        
+        ttk.Label(asc_frame, text="Fichier ASC DERET:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        ttk.Entry(asc_frame, textvariable=self.deret_file_path, width=50).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(5, 5))
+        ttk.Button(asc_frame, text="Parcourir", command=self.select_deret_file).grid(row=1, column=2, padx=(5, 0))
         
         convert_button = ttk.Button(main_frame, text="Convertir", command=self.convert_file, 
                                    style='Accent.TButton')
-        convert_button.grid(row=3, column=1, pady=15)
+        convert_button.configure(width=20)
+        convert_button.grid(row=3, column=1, pady=10)
         
         ttk.Label(main_frame, text="Log de conversion:").grid(row=4, column=0, sticky=(tk.W, tk.N), pady=(5, 5))
         
@@ -79,16 +126,26 @@ class CSVToASCConverter:
         if file_path:
             self.csv_file_path.set(file_path)
             base_name = os.path.splitext(file_path)[0]
-            self.output_file_path.set(f"{base_name}.asc")
+            self.gxo_file_path.set(f"{base_name}_GXO.asc")
+            self.deret_file_path.set(f"{base_name}_DERET.asc")
             
-    def select_output_file(self):
+    def select_gxo_file(self):
         file_path = filedialog.asksaveasfilename(
-            title="Enregistrer le fichier ASC",
+            title="Enregistrer le fichier ASC GXO",
             defaultextension=".asc",
             filetypes=[("Fichiers ASC", "*.asc"), ("Tous les fichiers", "*.*")]
         )
         if file_path:
-            self.output_file_path.set(file_path)
+            self.gxo_file_path.set(file_path)
+            
+    def select_deret_file(self):
+        file_path = filedialog.asksaveasfilename(
+            title="Enregistrer le fichier ASC DERET",
+            defaultextension=".asc",
+            filetypes=[("Fichiers ASC", "*.asc"), ("Tous les fichiers", "*.*")]
+        )
+        if file_path:
+            self.deret_file_path.set(file_path)
             
     def get_next_sequence_number(self):
         sequence = self.sequence_counter
@@ -125,22 +182,86 @@ class CSVToASCConverter:
         
         return line
         
+    def generate_asc_file(self, df_filtered, output_path, file_type):
+        self.sequence_counter = 163406
+        
+        with open(output_path, 'w', encoding='utf-8', newline='') as asc_file:
+            total_lines = 0
+            total_stores = 0
+            total_pieces = 0
+            
+            current_date = datetime.now()
+            date_str = current_date.strftime("%d/%m/%y")
+            
+            grouped = df_filtered.groupby('Recipient store')
+            
+            for store_code_str, store_data in grouped:
+                try:
+                    store_code = int(store_code_str)
+                except ValueError:
+                    self.log_message(f"Code magasin invalide '{store_code_str}', ignoré ({file_type})")
+                    continue
+                    
+                sequence_number = self.get_next_sequence_number()
+                
+                header_line = self.format_asc_header_line(store_code, sequence_number, date_str)
+                asc_file.write(header_line + '\r\n')
+                total_lines += 1
+                total_stores += 1
+                
+                line_number = 1
+                store_detail_count = 0
+                
+                for _, row in store_data.iterrows():
+                    try:
+                        barcode = str(row['Code-barres article']).strip()
+                        quantity_str = str(row['Quantité saisie transfert']).strip()
+                        
+                        if not barcode or barcode == 'nan' or barcode == '':
+                            continue
+                            
+                        try:
+                            quantity = int(float(quantity_str))
+                            if quantity <= 0:
+                                continue
+                        except (ValueError, TypeError):
+                            continue
+                        
+                        detail_line = self.format_asc_detail_line(
+                            store_code, sequence_number, line_number, 
+                            date_str, barcode, quantity
+                        )
+                        asc_file.write(detail_line + '\r\n')
+                        
+                        line_number += 1
+                        store_detail_count += 1
+                        total_lines += 1
+                        total_pieces += quantity
+                        
+                    except Exception as e:
+                        continue
+                
+                self.log_message(f"{file_type} - Magasin {store_code:03d}: {store_detail_count} articles traités")
+        
+        return total_stores, total_lines, total_pieces
+        
     def convert_file(self):
         try:
             if not self.csv_file_path.get():
                 messagebox.showerror("Erreur", "Veuillez sélectionner un fichier CSV source")
                 return
                 
-            if not self.output_file_path.get():
-                messagebox.showerror("Erreur", "Veuillez spécifier un fichier de sortie")
+            if not self.gxo_file_path.get():
+                messagebox.showerror("Erreur", "Veuillez spécifier un fichier de sortie GXO")
                 return
                 
-            self.sequence_counter = 163406
+            if not self.deret_file_path.get():
+                messagebox.showerror("Erreur", "Veuillez spécifier un fichier de sortie DERET")
+                return
                 
             self.log_text.delete(1.0, tk.END)
-            self.log_message("Début de la conversion avec le format CEGID...")
+            self.log_message("Début de la conversion avec séparation GXO/DERET...")
             self.log_message(f"Type de document: {self.document_type.get()}")
-            self.log_message(f"Séquence de départ: {self.sequence_counter}")
             
             self.log_message(f"Lecture du fichier CSV: {self.csv_file_path.get()}")
             
@@ -168,7 +289,7 @@ class CSVToASCConverter:
             self.log_message(f"Fichier CSV lu avec succès: {len(df)} lignes")
             self.log_message(f"Colonnes trouvées: {list(df.columns)}")
             
-            required_columns = ["Recipient store", "Code-barres article", "Quantité saisie transfert"]
+            required_columns = ["Recipient store", "Code-barres article", "Quantité saisie transfert", "BEST"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 raise ValueError(f"Colonnes manquantes dans le CSV: {missing_columns}")
@@ -179,170 +300,45 @@ class CSVToASCConverter:
             
             self.log_message(f"Après filtrage: {len(df)} lignes avec quantités valides")
             
-            current_date = datetime.now()
-            date_str = current_date.strftime("%d/%m/%y")
-            self.log_message(f"Date utilisée: {date_str}")
+            df['BEST'] = df['BEST'].fillna('DERET')
+            df['BEST'] = df['BEST'].astype(str).str.strip()
+            df.loc[df['BEST'] == '', 'BEST'] = 'DERET'
+            df.loc[df['BEST'] == 'nan', 'BEST'] = 'DERET'
             
-            grouped = df.groupby('Recipient store')
-            self.log_message(f"Données groupées par {len(grouped)} magasins")
+            df_gxo = df[df['BEST'] == 'GXO'].copy()
+            df_deret = df[df['BEST'] != 'GXO'].copy()
             
-            self.log_message("Génération du fichier ASC avec format CEGID exact...")
+            self.log_message(f"Lignes GXO: {len(df_gxo)}")
+            self.log_message(f"Lignes DERET: {len(df_deret)}")
             
-            with open(self.output_file_path.get(), 'w', encoding='utf-8', newline='') as asc_file:
-                total_lines = 0
-                total_stores = 0
-                total_pieces = 0
-                
-                for store_code_str, store_data in grouped:
-                    try:
-                        store_code = int(store_code_str)
-                    except ValueError:
-                        self.log_message(f"Code magasin invalide '{store_code_str}', ignoré")
-                        continue
-                        
-                    sequence_number = self.get_next_sequence_number()
-                    
-                    header_line = self.format_asc_header_line(store_code, sequence_number, date_str)
-                    asc_file.write(header_line + '\r\n')
-                    total_lines += 1
-                    total_stores += 1
-                    
-                    line_number = 1
-                    store_detail_count = 0
-                    
-                    for _, row in store_data.iterrows():
-                        try:
-                            barcode = str(row['Code-barres article']).strip()
-                            quantity_str = str(row['Quantité saisie transfert']).strip()
-                            
-                            if not barcode or barcode == 'nan' or barcode == '':
-                                self.log_message(f"Code-barre manquant, ligne ignorée")
-                                continue
-                                
-                            try:
-                                quantity = int(float(quantity_str))
-                                if quantity <= 0:
-                                    self.log_message(f"Quantité invalide ({quantity}), ligne ignorée")
-                                    continue
-                            except (ValueError, TypeError):
-                                self.log_message(f"Quantité non numérique ({quantity_str}), ligne ignorée")
-                                continue
-                            
-                            detail_line = self.format_asc_detail_line(
-                                store_code, sequence_number, line_number, 
-                                date_str, barcode, quantity
-                            )
-                            asc_file.write(detail_line + '\r\n')
-                            
-                            line_number += 1
-                            store_detail_count += 1
-                            total_lines += 1
-                            total_pieces += quantity
-                            
-                        except Exception as e:
-                            self.log_message(f"Erreur sur une ligne du magasin {store_code}: {e}")
-                            continue
-                    
-                    self.log_message(f"Magasin {store_code:03d}: {store_detail_count} articles traités (séquence: {sequence_number})")
+            gxo_stats = (0, 0, 0)
+            deret_stats = (0, 0, 0)
             
-            self.log_message(f"Conversion terminée avec succès!")
-            self.log_message(f"Fichier généré: {self.output_file_path.get()}")
-            self.log_message(f"Total: {total_stores} magasins, {total_lines} lignes générées")
+            if len(df_gxo) > 0:
+                self.log_message("Génération du fichier GXO...")
+                gxo_stats = self.generate_asc_file(df_gxo, self.gxo_file_path.get(), "GXO")
+                self.log_message(f"Fichier GXO généré: {gxo_stats[0]} magasins, {gxo_stats[1]} lignes, {gxo_stats[2]} pièces")
+            else:
+                self.log_message("Aucune donnée GXO trouvée, fichier GXO non généré")
             
-            self.validate_generated_file()
+            if len(df_deret) > 0:
+                self.log_message("Génération du fichier DERET...")
+                deret_stats = self.generate_asc_file(df_deret, self.deret_file_path.get(), "DERET")
+                self.log_message(f"Fichier DERET généré: {deret_stats[0]} magasins, {deret_stats[1]} lignes, {deret_stats[2]} pièces")
+            else:
+                self.log_message("Aucune donnée DERET trouvée, fichier DERET non généré")
+            
+            self.log_message("Conversion terminée avec succès!")
             
             messagebox.showinfo("Succès", 
-                              f"Conversion terminée avec succès!\n"
-                              f"Fichier généré: {self.output_file_path.get()}\n"
-                              f"Total: {total_stores} magasins, {total_lines} lignes, {total_pieces} pièces")
+                              f"Conversion terminée avec succès!\n\n"
+                              f"Fichier GXO: {gxo_stats[0]} magasins, {gxo_stats[1]} lignes, {gxo_stats[2]} pièces\n"
+                              f"Fichier DERET: {deret_stats[0]} magasins, {deret_stats[1]} lignes, {deret_stats[2]} pièces")
                               
         except Exception as e:
             error_msg = f"Erreur lors de la conversion: {str(e)}"
             self.log_message(error_msg)
             messagebox.showerror("Erreur", error_msg)
-            
-    def validate_generated_file(self):
-        try:
-            self.log_message("Validation du fichier généré selon les standards CEGID...")
-            
-            with open(self.output_file_path.get(), 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-            
-            header_count = 0
-            detail_count = 0
-            errors = []
-            warnings = []
-            sequence_numbers = set()
-            
-            for i, line in enumerate(lines, 1):
-                line = line.rstrip('\r\n')
-                
-                if line.startswith('E'):
-                    header_count += 1
-                    if len(line) != 191:
-                        errors.append(f"Ligne {i}: En-tête longueur incorrecte ({len(line)} au lieu de 191 caractères)")
-                        
-                elif line.startswith('L'):
-                    detail_count += 1
-                    
-                    try:
-                        seq_start = line.find('INTINT') + 6
-                        seq_end = seq_start + 6
-                        sequence_num = line[seq_start:seq_end]
-                        sequence_numbers.add(sequence_num)
-                    except:
-                        pass
-                    
-                    if len(line) < 70:
-                        errors.append(f"Ligne {i}: Ligne de détail trop courte ({len(line)} caractères)")
-                        continue
-                    
-                    try:
-                        barcode_start = line.find('                    ') + 20
-                        if barcode_start > 19:
-                            barcode_section = line[barcode_start:barcode_start+15].strip()
-                            barcode_digits = ''.join(filter(str.isdigit, barcode_section))
-                            
-                            if len(barcode_digits) != 15:
-                                warnings.append(f"Ligne {i}: Code-barre non standard ({len(barcode_digits)} chiffres au lieu de 15) - '{barcode_section}'")
-                            elif not barcode_digits.startswith('0137'):
-                                warnings.append(f"Ligne {i}: Code-barre ne commence pas par '0137' - '{barcode_digits}'")
-                    except Exception as e:
-                        errors.append(f"Ligne {i}: Code-barre illisible - {e}")
-                    
-                    try:
-                        quantity_section = line[70:].strip()
-                        if not quantity_section:
-                            errors.append(f"Ligne {i}: Quantité manquante (erreur QTE_T1)")
-                        else:
-                            quantity_digits = ''.join(filter(str.isdigit, quantity_section.split()[0] if quantity_section.split() else ''))
-                            if not quantity_digits:
-                                errors.append(f"Ligne {i}: Quantité non numérique (erreur QTE_T1)")
-                    except:
-                        errors.append(f"Ligne {i}: Erreur dans la section quantité (QTE_T1)")
-            
-            self.log_message(f"Validation: {header_count} en-têtes, {detail_count} lignes de détail")
-            self.log_message(f"{len(sequence_numbers)} numéros de séquence différents générés")
-            
-            if errors:
-                self.log_message("Erreurs critiques détectées:")
-                for error in errors[:5]:
-                    self.log_message(f"  {error}")
-                if len(errors) > 5:
-                    self.log_message(f"  ... et {len(errors) - 5} autres erreurs critiques")
-                    
-            if warnings:
-                self.log_message("Avertissements:")
-                for warning in warnings[:3]:
-                    self.log_message(f"  {warning}")
-                if len(warnings) > 3:
-                    self.log_message(f"  ... et {len(warnings) - 3} autres avertissements")
-            
-            if not errors:
-                self.log_message("Validation réussie: format compatible CEGID")
-                
-        except Exception as e:
-            self.log_message(f"Erreur lors de la validation: {e}")
 
 def main():
     root = tk.Tk()
