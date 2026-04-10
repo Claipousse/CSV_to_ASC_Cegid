@@ -28,6 +28,7 @@ class CSVToASCConverter:
         self.column_mode = tk.StringVar(value="name")
         self.date_mode = tk.StringVar(value="auto")
         self.output_mode = tk.StringVar(value="simple")
+        self.store_mode = tk.StringVar(value="file")
         self.sequence_counter = 70000
         
         # Variables globales pour le timestamp
@@ -48,17 +49,17 @@ class CSVToASCConverter:
         self.bg_canvas = tk.Canvas(self.root, highlightthickness=0)
         self.bg_canvas.pack(fill=tk.BOTH, expand=True)
         
-        main_canvas = tk.Canvas(self.bg_canvas, highlightthickness=0)
-        main_scrollbar = ttk.Scrollbar(self.bg_canvas, orient="vertical", command=main_canvas.yview)
-        self.scrollable_frame = ttk.Frame(main_canvas)
+        self.main_canvas = tk.Canvas(self.bg_canvas, highlightthickness=0)
+        main_scrollbar = ttk.Scrollbar(self.bg_canvas, orient="vertical", command=self.main_canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.main_canvas)
         
         self.scrollable_frame.bind(
             "<Configure>",
-            lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+            lambda e: self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
         )
         
-        main_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        main_canvas.configure(yscrollcommand=main_scrollbar.set)
+        self.main_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.main_canvas.configure(yscrollcommand=main_scrollbar.set)
         
         def create_gradient():
             self.bg_canvas.delete("gradient")
@@ -92,13 +93,13 @@ class CSVToASCConverter:
         main_frame.columnconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
         main_frame.columnconfigure(2, weight=1)
-        main_frame.rowconfigure(8, weight=1)
+        main_frame.rowconfigure(9, weight=1)
         
         def configure_scroll_region(event=None):
-            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+            self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
             canvas_width = self.bg_canvas.winfo_width()
             if canvas_width > 1:
-                main_canvas.itemconfig(main_canvas.find_all()[0], width=canvas_width-20)
+                self.main_canvas.itemconfig(self.main_canvas.find_all()[0], width=canvas_width-20)
         
         self.bg_canvas.bind("<Configure>", lambda e: self.root.after_idle(configure_scroll_region))
         self.scrollable_frame.bind("<Configure>", configure_scroll_region)
@@ -128,8 +129,19 @@ class CSVToASCConverter:
         ttk.Radiobutton(mode_output_frame, text="Avancé", variable=self.output_mode, 
                        value="advanced", command=self.on_output_mode_change).grid(row=0, column=1, sticky=tk.W)
         
+        store_mode_frame = ttk.LabelFrame(main_frame, text="Liste des magasins", padding="10")
+        store_mode_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        store_mode_frame.columnconfigure(3, weight=1)
+        
+        ttk.Radiobutton(store_mode_frame, text="Par fichier (recommandé)", variable=self.store_mode,
+                       value="file").grid(row=0, column=0, sticky=tk.W, padx=(0, 15))
+        ttk.Radiobutton(store_mode_frame, text="Hardcodée", variable=self.store_mode,
+                       value="hardcoded").grid(row=0, column=1, sticky=tk.W, padx=(0, 15))
+        ttk.Button(store_mode_frame, text="En savoir plus", command=self.show_store_mode_help,
+                  style='Link.TButton').grid(row=0, column=2, sticky=tk.W, padx=(15, 0))
+        
         mode_frame = ttk.LabelFrame(main_frame, text="Mode de sélection des colonnes", padding="10")
-        mode_frame.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        mode_frame.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
         mode_frame.columnconfigure(3, weight=1)
         
         ttk.Radiobutton(mode_frame, text="Filtrage par nom", variable=self.column_mode, 
@@ -140,7 +152,7 @@ class CSVToASCConverter:
                   style='Link.TButton').grid(row=0, column=2, sticky=tk.W, padx=(15, 0))
         
         date_frame = ttk.LabelFrame(main_frame, text="Mode de sélection de date", padding="10")
-        date_frame.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
+        date_frame.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 15))
         date_frame.columnconfigure(3, weight=1)
         
         tomorrow_str = (datetime.now() + timedelta(days=1)).strftime("%d/%m")
@@ -159,12 +171,12 @@ class CSVToASCConverter:
         
         convert_button = ttk.Button(main_frame, text="Convertir", command=self.convert_file, style='Accent.TButton')
         convert_button.configure(width=20)
-        convert_button.grid(row=6, column=1, pady=10)
+        convert_button.grid(row=7, column=1, pady=10)
         
-        ttk.Label(main_frame, text="Log de conversion:").grid(row=7, column=0, sticky=(tk.W, tk.N), pady=(5, 5))
+        ttk.Label(main_frame, text="Log de conversion:").grid(row=8, column=0, sticky=(tk.W, tk.N), pady=(5, 5))
         
         log_frame = ttk.Frame(main_frame)
-        log_frame.grid(row=8, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+        log_frame.grid(row=9, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
         
@@ -175,12 +187,12 @@ class CSVToASCConverter:
         scrollbar_log.grid(row=0, column=1, sticky=(tk.N, tk.S))
         
         ttk.Label(main_frame, text="Fait par Clément :)", font=('Arial', 7), 
-                 foreground='gray').grid(row=9, column=2, sticky=tk.E, pady=(10, 0))
+                 foreground='gray').grid(row=10, column=2, sticky=tk.E, pady=(2, 5))
         
-        main_canvas.pack(side="left", fill="both", expand=True)
+        self.main_canvas.pack(side="left", fill="both", expand=True)
         main_scrollbar.pack(side="right", fill="y")
         
-        self.bind_mousewheel(main_canvas)
+        self.bind_mousewheel(self.main_canvas)
         
         self.on_output_mode_change()
     
@@ -188,14 +200,7 @@ class CSVToASCConverter:
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
-        def _bind_to_mousewheel(event):
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        
-        def _unbind_from_mousewheel(event):
-            canvas.unbind_all("<MouseWheel>")
-        
-        canvas.bind('<Enter>', _bind_to_mousewheel)
-        canvas.bind('<Leave>', _unbind_from_mousewheel)
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
     
     def create_output_widgets(self):
         simple_configs = [
@@ -374,7 +379,7 @@ Colonnes recherchées :
 • Quantité : "Quantité saisie transfert"
 • Type : "BEST"
 
-✅ Avantages : Fonctionne même si l'ordre change, plus robuste et recommandé."""),
+Avantages : Fonctionne même si l'ordre change, plus robuste et recommandé."""),
             ("Filtrage par ordre", """Le programme utilise la position des colonnes dans le fichier CSV.
 
 Ordre attendu (basé sur le format REA.csv) :
@@ -392,19 +397,150 @@ Ordre attendu (basé sur le format REA.csv) :
 12. Stock dispo.
 13. BEST
 
-⚠️ Important : L'ordre doit être exactement respecté, moins flexible que le filtrage par nom.""")
+Important : L'ordre doit être exactement respecté, moins flexible que le filtrage par nom.""")
         ]
         
         for title, text in help_data:
             frame = ttk.LabelFrame(main_help_frame, text=title, padding="15")
             frame.pack(fill=tk.X, pady=(0, 15 if title == help_data[0][0] else 10))
-            ttk.Label(frame, text=text, justify=tk.LEFT).pack(anchor=tk.W)
+            ttk.Label(frame, text=text, justify=tk.LEFT, wraplength=500).pack(anchor=tk.W)
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
         
-    def select_csv_file(self):
+        def _on_mousewheel_col(e):
+            if canvas.winfo_exists():
+                canvas.yview_scroll(int(-1*(e.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel_col)
+        help_window.protocol("WM_DELETE_WINDOW", lambda: [canvas.unbind_all("<MouseWheel>"), self.bind_mousewheel(self.main_canvas), help_window.destroy()])
+        
+    def show_store_mode_help(self):
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Aide - Liste des magasins")
+        help_window.geometry("580x580")
+        help_window.configure(bg='#f8e8f0')
+        help_window.transient(self.root)
+        help_window.grab_set()
+        help_window.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        
+        canvas = tk.Canvas(help_window, bg='#f8e8f0')
+        scrollbar = ttk.Scrollbar(help_window, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        main_help_frame = ttk.Frame(scrollable_frame, padding="20")
+        main_help_frame.pack(fill=tk.BOTH, expand=True)
+        
+        help_data = [
+            ("Par fichier (recommandé)", """Le programme lit un fichier CSV pour déterminer le type de chaque magasin (SUCC, AFF ou FRA). Ce fichier doit être présent dans le même dossier que le script, et doit s'appeler "liste_magasins.csv"
+
+Format attendu :
+• Colonne A = code magasin (numérique à 3 chiffres)
+• Colonne B = type (SUCC, AFF ou FRA)
+Les autres colonnes sont ignorées.
+
+Avantages : aucune modification du script nécessaire si un magasin change de statut ou si un nouveau magasin est ajouté."""),
+            ("Hardcodée", """Le programme utilise les plages et listes de codes intégrées directement dans le script.
+
+Règles appliquées :
+• SUCC ≤ 399 (+ exception code 600)
+• AFF 400–999
+• FRA : 599, 608, 609, 610, 611, 612, 613, 614, 615, 618, 619, 621, 625, 626, 628, 632, 633, 634, 635, 636, 638, 639, 640, 643, 648, 653, 655, 656, 657, 660, 663, 664, 665, 666, 667, 703
+
+Inconvénient : J'écris ce texte en Avril 2026, si la liste change d'ici là, alors cette liste sera obsolète et il faudra modifier le script pour qu'elle soit à jour. Je compte pas modifier le script à chaque mini changement (sauf contre virement de 20k pesos via PayPal). Pour cette raison, privilégiez la 1ère option.""")
+        ]
+        
+        for title, text in help_data:
+            frame = ttk.LabelFrame(main_help_frame, text=title, padding="15")
+            frame.pack(fill=tk.X, pady=(0, 15 if title == help_data[0][0] else 10))
+            ttk.Label(frame, text=text, justify=tk.LEFT, wraplength=500).pack(anchor=tk.W)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        def _on_mousewheel_store(e):
+            if canvas.winfo_exists():
+                canvas.yview_scroll(int(-1*(e.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel_store)
+        help_window.protocol("WM_DELETE_WINDOW", lambda: [canvas.unbind_all("<MouseWheel>"), self.bind_mousewheel(self.main_canvas), help_window.destroy()])
+
+    def load_store_types_from_csv(self):
+        """Charge le fichier liste_magasins.csv et retourne un dict {code: type} ou lève une ValueError."""
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, "liste_magasins.csv")
+        
+        if not os.path.exists(csv_path):
+            raise ValueError(
+                "Fichier liste_magasins.csv introuvable.\n"
+                f"Il doit être présent dans le même dossier que le script :\n{script_dir}\n\n"
+                "Vérifiez que le fichier existe et que son nom est exactement \"liste_magasins.csv\"."
+            )
+        
+        store_types = {}
+        errors = []
+        seen_codes = {}
+        valid_types = {"SUCC", "AFF", "FRA"}
+        
+        for encoding in ['utf-8', 'cp1252', 'iso-8859-1', 'latin-1']:
+            try:
+                with open(csv_path, encoding=encoding, newline='') as f:
+                    content = f.read()
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        import io
+        import csv as csv_module
+        reader = csv_module.reader(io.StringIO(content), delimiter=';')
+        
+        for line_num, row in enumerate(reader, start=1):
+            if line_num == 1:
+                # Ignorer l'en-tête si la première cellule n'est pas numérique
+                try:
+                    int(str(row[0]).strip())
+                except (ValueError, IndexError):
+                    continue
+            
+            if not row or all(cell.strip() == '' for cell in row):
+                continue
+            
+            raw_code = str(row[0]).strip() if len(row) > 0 else ''
+            raw_type = str(row[1]).strip().upper() if len(row) > 1 else ''
+            
+            # Vérification code numérique
+            try:
+                code = int(raw_code)
+            except ValueError:
+                errors.append(f"Ligne {line_num} : code non numérique \"{raw_code}\"")
+                continue
+            
+            # Vérification doublon
+            if code in seen_codes:
+                errors.append(f"Ligne {line_num} : code {code} en doublon (déjà vu ligne {seen_codes[code]})")
+                continue
+            seen_codes[code] = line_num
+            
+            # Vérification statut manquant
+            if not raw_type:
+                errors.append(f"Ligne {line_num} : statut manquant pour le code {code}")
+                continue
+            
+            # Vérification statut reconnu
+            if raw_type not in valid_types:
+                errors.append(f"Ligne {line_num} : statut \"{raw_type}\" non reconnu pour le code {code} (valeurs acceptées : SUCC, AFF, FRA)")
+                continue
+            
+            store_types[code] = raw_type
+        
+        if errors:
+            raise ValueError("Erreurs détectées dans liste_magasins.csv :\n\n" + "\n".join(f"• {e}" for e in errors))
+        
+        return store_types
+
+    
         file_path = filedialog.askopenfilename(
             title="Sélectionner le fichier CSV",
             filetypes=[("Fichiers CSV", "*.csv"), ("Tous les fichiers", "*.*")]
@@ -423,6 +559,23 @@ Ordre attendu (basé sur le format REA.csv) :
                 for suffix, var in suffixes:
                     var.set(f"{base_name}{suffix}")
     
+    def select_csv_file(self):
+        file_path = filedialog.askopenfilename(
+            title="Sélectionner le fichier CSV",
+            filetypes=[("Fichiers CSV", "*.csv"), ("Tous les fichiers", "*.*")]
+        )
+        if file_path:
+            self.csv_file_path.set(file_path)
+            base_name = os.path.splitext(file_path)[0]
+            self.gxo_file_path.set(f"{base_name}_GXO.asc")
+            self.deret_file_path.set(f"{base_name}_DERET.asc")
+            if self.output_mode.get() == "advanced":
+                suffixes = [("_SUCC_GXO.asc", self.succ_gxo_file_path), ("_SUCC_DERET.asc", self.succ_deret_file_path),
+                           ("_AFF_GXO.asc", self.aff_gxo_file_path), ("_AFF_DERET.asc", self.aff_deret_file_path),
+                           ("_FRA_GXO.asc", self.fra_gxo_file_path), ("_FRA_DERET.asc", self.fra_deret_file_path)]
+                for suffix, var in suffixes:
+                    var.set(f"{base_name}{suffix}")
+
     def select_gxo_file(self):
         self._select_file("Enregistrer le fichier GXO", self.gxo_file_path)
     def select_deret_file(self):
@@ -448,15 +601,18 @@ Ordre attendu (basé sur le format REA.csv) :
         if file_path:
             var.set(file_path)
     
-    def get_store_type(self, store_code):
+    def get_store_type(self, store_code, store_map=None):
         try:
             code = int(store_code)
-            if code in self.fra_stores:
-                return "FRA"
-            elif code <= 399 or code in self.succ_exceptions:
-                return "SUCC"
-            elif 400 <= code <= 999:
-                return "AFF"
+            if store_map is not None:
+                return store_map.get(code, None)
+            else:
+                if code in self.fra_stores:
+                    return "FRA"
+                elif code <= 399 or code in self.succ_exceptions:
+                    return "SUCC"
+                elif 400 <= code <= 999:
+                    return "AFF"
         except ValueError:
             pass
         return None
@@ -651,6 +807,16 @@ Ordre attendu (basé sur le format REA.csv) :
             self.log_message(f"Date utilisée: {selected_date.strftime('%d/%m/%Y')} (Mode: {self.date_mode.get()})")
             self.log_message(f"Lecture du fichier CSV: {self.csv_file_path.get()}")
             
+            # Chargement de la liste des magasins si mode avancé
+            store_map = None
+            if self.output_mode.get() == "advanced":
+                if self.store_mode.get() == "file":
+                    self.log_message("Chargement de liste_magasins.csv...")
+                    store_map = self.load_store_types_from_csv()
+                    self.log_message(f"liste_magasins.csv chargé : {len(store_map)} magasins")
+                else:
+                    self.log_message("Mode hardcodé : utilisation des plages et listes intégrées")
+            
             df = None
             for encoding in ['utf-8', 'cp1252', 'iso-8859-1', 'latin-1']:
                 try:
@@ -711,7 +877,7 @@ Ordre attendu (basé sur le format REA.csv) :
                                   f"Fichier GXO: {results['GXO'][0]} magasins, {results['GXO'][1]} lignes, {results['GXO'][2]} pièces\n"
                                   f"Fichier DERET: {results['DERET'][0]} magasins, {results['DERET'][1]} lignes, {results['DERET'][2]} pièces")
             else:
-                df['store_type'] = df[column_mapping['store']].apply(self.get_store_type)
+                df['store_type'] = df[column_mapping['store']].apply(lambda x: self.get_store_type(x, store_map))
                 df_valid = df[df['store_type'].notna()].copy()
                 excluded_count = len(df) - len(df_valid)
                 
