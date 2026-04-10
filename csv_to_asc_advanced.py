@@ -204,7 +204,7 @@ class CSVToASCConverter:
             ttk.Label(self.calendar_frame, text=day, font=('Arial', 9, 'bold')).grid(
                 row=0, column=i, padx=1, pady=1, ipadx=6, ipady=2)
         
-        first_day = (calendar.monthrange(self.cal_year, self.cal_month)[0] + 1) % 7
+        first_day = calendar.monthrange(self.cal_year, self.cal_month)[0]
         days_in_month = calendar.monthrange(self.cal_year, self.cal_month)[1]
         tomorrow = date.today() + timedelta(days=1)
         
