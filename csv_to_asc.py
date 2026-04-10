@@ -32,7 +32,6 @@ class CSVToASCConverter:
     def setup_ui(self):
         canvas = tk.Canvas(self.root, highlightthickness=0)
         canvas.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
         def create_gradient(canvas, color1, color2, width, height):
             r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
             r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
@@ -193,7 +192,7 @@ class CSVToASCConverter:
             ttk.Label(self.calendar_frame, text=day, font=('Arial', 9, 'bold')).grid(
                 row=0, column=i, padx=1, pady=1, ipadx=6, ipady=2)
         
-        first_day = (calendar.monthrange(self.cal_year, self.cal_month)[0] + 1) % 7
+        first_day = calendar.monthrange(self.cal_year, self.cal_month)[0]
         days_in_month = calendar.monthrange(self.cal_year, self.cal_month)[1]
         tomorrow = date.today() + timedelta(days=1)
         
