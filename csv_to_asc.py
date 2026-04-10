@@ -35,7 +35,8 @@ class CSVToASCConverter:
         self.global_current_minutes = 0
         self.global_current_milliseconds = 894
         
-        self.fra_stores = {599, 608, 609, 610, 611, 612, 613, 614, 615, 618, 619, 621, 625, 626, 628, 632, 633, 634, 635, 636, 638, 639, 640, 643, 648, 653, 655, 656, 657, 703}
+        self.fra_stores = {599, 608, 609, 610, 611, 612, 613, 614, 615, 618, 619, 621, 625, 626, 628, 632, 633, 634, 635, 636, 638, 639, 640, 643, 648, 653, 655, 656, 657, 660, 663, 664, 665, 666, 667, 703}
+        self.succ_exceptions = {600}  # Codes SUCC hors plage (> 399)
         
         tomorrow = datetime.now() + timedelta(days=1)
         self.selected_date_var = tk.StringVar(value=tomorrow.strftime("%d/%m/%Y"))
@@ -452,9 +453,9 @@ Ordre attendu (basé sur le format REA.csv) :
             code = int(store_code)
             if code in self.fra_stores:
                 return "FRA"
-            elif code <= 399:
+            elif code <= 399 or code in self.succ_exceptions:
                 return "SUCC"
-            elif 400 <= code <= 800:
+            elif 400 <= code <= 999:
                 return "AFF"
         except ValueError:
             pass
